@@ -11,90 +11,54 @@ app = FastAPI()
 
 app.mount('/files', StaticFiles(directory='files'), name='files')
 
-@app.get('/product', response_model = List[pyd.SchemaProduct])
-def get_all_product(db: Session = Depends(get_db)):
-    products = db.query(m.Product).all()
-    return products
-
-@app.post('/product/image/{product_id}', response_model=pyd.SchemaProduct)
-def upload_image(product_id: int, image: UploadFile, db: Session = Depends(get_db)):
-    product_db = (
-        db.query(m.Product).filter(m.Product.id == product_id).first()
+@app.post('/movie/image/{movie_id}', response_model=pyd.SchemaMovie)
+def upload_image(movie_id: int, image: UploadFile, db: Session = Depends(get_db)):
+    movie_db = (
+        db.query(m.Movie).filter(m.Movie.id == movie_id).first()
     )
-    if not product_db:
+    if not movie_db:
         raise HTTPException(404)
     if image.content_type not in ('image/png', 'image/jpeg'):
         raise HTTPException(400, 'Неверный тип данных')
     with open(f'files{image.filename}', 'wb') as f:
         shutil.copyfileobj(image.file, f)
-    product_db.img = f'files/{image.filename}'
+    movie_db.img = f'files/{image.filename}'
     db.commit()
-    return product_db
+    return movie_db
 
-@app.get('/film', response_model = List[pyd.BaseFilm])
-def get_all_film(db: Session = Depends(get_db)):
-    films = db.query(m.Film).all()
-    return films
+@app.get('/movies', response_model = List[pyd.BaseMovie])
+def get_all_movies(db: Session = Depends(get_db)):
+    movies = db.query(m.Movie).all()
+    return movies
 
-@app.get('/product/{product_id}', response_model = pyd.BaseProduct)
-def get_product(product_id: int, db: Session = Depends(get_db)):
-    product = db.query(m.Product).filter(
-        m.Product.id == product_id
+@app.get('/movies/{id}', response_model = pyd.BaseMovie)
+def get_movie(id: int, db: Session = Depends(get_db)):
+    movie = db.query(m.Movie).filter(
+        m.Movie.id == id
     ).first()
-    if not product:
-        raise HTTPException(404, 'Товар не найден')
-    return product
-
-@app.get('/film/{film_id}', response_model = pyd.BaseFilm)
-def get_film(film_id: int, db: Session = Depends(get_db)):
-    film = db.query(m.Film).filter(
-        m.Film.id == film_id
-    ).first()
-    if not film:
+    if not movie:
         raise HTTPException(404, 'Фильм не найден')
-    return film
+    return movie
 
-@app.post('/product', response_model = pyd.BaseProduct)
-def create_product(product: pyd.CreateProduct, db: Session = Depends(get_db)):
-    product_db = db.query(m.Product).filter(m.Product.name == product.name).first()
-    if product_db:
-        raise HTTPException(400, 'Такой товар есть')
-    
-    product_db = m.Product()
-    product_db.name = product.name
-
-    db.add(product_db)
-    db.commit()
-    return product_db
-
-@app.post('/film', response_model = pyd.BaseFilm)
-def create_film(film: pyd.CreateFilm, db: Session = Depends(get_db)):
-    film_db = db.query(m.Film).filter(m.Film.name == film.name).first()
-    if film_db:
+@app.post('/movies', response_model = pyd.BaseMovie)
+def create_movie(movie: pyd.CreateMovie, db: Session = Depends(get_db)):
+    movie_db = db.query(m.Movie).filter(m.Movie.name == movie.name).first()
+    if movie_db:
         raise HTTPException(400, 'Такой фильм есть')
     
-    film_db = m.Film()
-    film_db.name = film.name
-    film_db.rating = film.rating
+    movie_db = m.Movie()
+    movie_db.name = movie.name
+    movie_db.rating = movie.rating
 
-    db.add(film_db)
+    db.add(movie_db)
     db.commit()
-    return film_db
+    return movie_db
 
-@app.delete('/product/{product_id}')
-def delete_product(product_id: int, db: Session = Depends(get_db)):
-    product = db.query(m.Product).filter(m.Product.id == product_id).first()
-    if not product:
-        raise HTTPException(404, 'Товар не найден')
-    db.delete(product)
-    db.commit()
-    return {'msg': 'Товар удален'}
-
-@app.delete('/film/{film_id}')
-def delete_film(film_id: int, db: Session = Depends(get_db)):
-    film = db.query(m.Film).filter(m.Film.id == film_id).first()
-    if not film:
+@app.delete('/movies/{id}')
+def delete_movie(id: int, db: Session = Depends(get_db)):
+    movie = db.query(m.Movie).filter(m.Movie.id == id).first()
+    if not movie:
         raise HTTPException(404, 'Фильм не найден')
-    db.delete(film)
+    db.delete(movie)
     db.commit()
     return {'msg': 'Фильм удален'}

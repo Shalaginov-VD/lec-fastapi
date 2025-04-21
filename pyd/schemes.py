@@ -1,4 +1,4 @@
 from .base_models import *
 
-class SchemaProduct(BaseProduct):
-    category: BaseCategory
+class SchemaMovie(BaseMovie):
+    genre: BaseGenre
